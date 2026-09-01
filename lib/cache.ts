@@ -5,13 +5,11 @@ interface CacheEntry {
   expiresAt: number;
 }
 
-const SHORT_TTL_MS = Number(process.env.CACHE_TTL ?? 60) * 1000; // trạng thái đang biến động
-const DELIVERED_TTL_MS = SHORT_TTL_MS * 20; // DELIVERED có thể cache lâu hơn nhiều (mục 16)
+const SHORT_TTL_MS = Number(process.env.CACHE_TTL ?? 120) * 1000; // 2 phút mặc định
+const DELIVERED_TTL_MS = SHORT_TTL_MS * 20;
 
-// LƯU Ý: đây là cache trong bộ nhớ của MỘT instance serverless. Trên Vercel/Cloudflare,
-// mỗi cold start / mỗi vùng có thể có bộ nhớ riêng nên đây chỉ là lớp giảm tải tối thiểu,
-// không phải cache phân tán. Muốn cache dùng chung nhiều instance, thay bằng Cloudflare KV
-// hoặc Vercel KV (Upstash Redis) — xem ghi chú trong README.
+// In-memory cache theo serverless instance. Đây là lớp giảm tải tối thiểu;
+// cache phân tán nên dùng Vercel/Upstash/Cloudflare KV khi traffic tăng.
 const store = new Map<string, CacheEntry>();
 
 function cacheKey(carrierId: string, trackingCode: string): string {
@@ -19,10 +17,11 @@ function cacheKey(carrierId: string, trackingCode: string): string {
 }
 
 export function getCached(carrierId: string, trackingCode: string): TrackingResult | null {
-  const entry = store.get(cacheKey(carrierId, trackingCode));
+  const key = cacheKey(carrierId, trackingCode);
+  const entry = store.get(key);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) {
-    store.delete(cacheKey(carrierId, trackingCode));
+    store.delete(key);
     return null;
   }
   return entry.value;
@@ -33,7 +32,6 @@ export function setCached(carrierId: string, trackingCode: string, value: Tracki
   store.set(cacheKey(carrierId, trackingCode), { value, expiresAt: Date.now() + ttl });
 }
 
-/** Dọn các entry hết hạn — gọi định kỳ tránh Map phình to trong instance sống lâu. */
 export function pruneExpired(): void {
   const now = Date.now();
   for (const [key, entry] of store.entries()) {
