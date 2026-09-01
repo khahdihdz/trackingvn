@@ -3,9 +3,10 @@ import { RateLimitError } from "./errors";
 const WINDOW_MS = 10 * 60 * 1000; // 10 phút
 const MAX_REQUESTS = Number(process.env.RATE_LIMIT ?? 30); // 30 request / 10 phút / IP
 
-// Cùng lưu ý như cache.ts: đây là rate-limit theo từng instance serverless, không phải
-// phân tán toàn cục. Cho production nhiều traffic, dùng Cloudflare Rate Limiting rules
-// hoặc Vercel Firewall / Upstash Ratelimit thay cho bộ nhớ trong tiến trình.
+// In-memory rate limit chỉ có hiệu lực trong từng serverless instance.
+// Với production nhiều traffic nên dùng Vercel Firewall/Upstash/Cloudflare để
+// có rate limit phân tán. Ở đây vẫn giữ lớp bảo vệ nhẹ, nhưng cache được kiểm tra
+// trước khi gọi hàm này để cache hit không tiêu tốn quota.
 const hits = new Map<string, number[]>();
 
 export function checkRateLimit(identifier: string): void {
@@ -15,7 +16,7 @@ export function checkRateLimit(identifier: string): void {
 
   if (timestamps.length >= MAX_REQUESTS) {
     const oldestInWindow = timestamps[0]!;
-    const retryAfterSeconds = Math.ceil((oldestInWindow + WINDOW_MS - now) / 1000);
+    const retryAfterSeconds = Math.max(1, Math.ceil((oldestInWindow + WINDOW_MS - now) / 1000));
     hits.set(identifier, timestamps);
     throw new RateLimitError(retryAfterSeconds);
   }
