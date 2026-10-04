@@ -1,11 +1,1 @@
-{
-  "name": "Tracking Việt Nam",
-  "short_name": "Tracking VN",
-  "description": "Tra cứu và theo dõi vận đơn các đơn vị vận chuyển tại Việt Nam.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#2563eb",
-  "lang": "vi",
-  "icons": []
-}
+{"name":"TrackingVN — Tra cứu vận đơn","short_name":"TrackingVN","description":"Tra cứu và theo dõi đơn hàng Việt Nam.","start_url":"/","display":"standalone","background_color":"#f6f8fc","theme_color":"#2563eb","lang":"vi"}
