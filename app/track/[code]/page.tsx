@@ -1,2 +1,2 @@
 import TrackerApp from "@/components/TrackerApp";
-export default async function TrackPage({params}:{params:Promise<{code:string}>}){const {code}=await params;return <TrackerApp initialCode={decodeURIComponent(code)}/>}
+export default function TrackPage({params}:{params:{code:string}}){return <TrackerApp initialCode={decodeURIComponent(params.code)}/>}
